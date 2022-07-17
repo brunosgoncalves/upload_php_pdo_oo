@@ -3,23 +3,16 @@
 require __DIR__.'/vendor/autoload.php';
 
 use \App\File\Upload;
-use \App\File\User;
-
-$tipos = ['xml'];
-// $sqlUser = new User();
-
-// $sqlUser->sqlselect(1);
-
-// exit();
 
 
 if(isset($_FILES['arquivo'])){
     $ojtUplosd = new UpLoad($_FILES['arquivo']);
 
-    $testeErro = $ojtUplosd->upload(__DIR__.'\File',$tipos);
+    $testeErro = $ojtUplosd->upload(__DIR__.'\File',TIPOEXTENCAO, CPFCLIENTE);
 
     if($testeErro){
         echo 'Arquivo Importado';
+        
         exit();
     }
     die('Probloma a enviar o arquivo!!!');

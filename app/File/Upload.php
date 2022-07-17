@@ -2,7 +2,8 @@
 
 namespace App\File;
 
-use SimpleXMLElement;
+use \App\File\User;
+
 
 class Upload{
 
@@ -57,6 +58,8 @@ class Upload{
         $this->size = $arquivos['size'];
         $this->tmpName = $arquivos['tmp_name'];
         $this->type = $arquivos['type'];
+        $this->useBancoMysql =  new User();
+        
                  
     }
 
@@ -66,19 +69,23 @@ class Upload{
         return $this->name.$extension;
     }
 
-    public function upload($localArquivo,$tipoArquivo)
+    public function upload($localArquivo,$tipoArquivo,$cnpjAValidar)
     {
+        
         if (in_array($this->extension, $tipoArquivo) and $this->error == 0) { 
+            
             $path = $localArquivo.'\\'.$this->caminhoArquivo();
-
-            $this->entraArquivo($this->tmpName,CPFCLIENTE);
-           // return move_uploaded_file($this->tmpName, $path);  
+            $retornoTesteAquivo = $this->entraArquivo($this->tmpName, $cnpjAValidar);
+            if($retornoTesteAquivo == true){
+                
+                move_uploaded_file($this->tmpName, $path); 
+                return  true;
+            }else{
+                return $retornoTesteAquivo;
+            }
         }else{
-            return false;
+            return "Aextencao do arquivo esta com problemas!!!";
         }
-
-        return $teste = $this->error ==0 ? false:true;
-  
     }
 
     public function entraArquivo($path,$cpfTem)
@@ -87,101 +94,46 @@ class Upload{
         
         $teste  = $file->asXML();
         $file = json_decode(json_encode($file),TRUE);
-
+        
         if(strpos($teste, $cpfTem)){
-            
-            $last_names = array_column($file, 'nProt');
-            print_r($last_names);
-
-
-            // if(array_column( $file['protNFe']['infProt'], "nProt")){
-            //     echo "<pre>";
-            //     print_r($file['protNFe']['infProt']);
-            //     exit();
-            // }
-
-
-            
+            if (array_key_exists('nProt', $file['protNFe']['infProt'])) {
+                if(!empty($file['protNFe']['infProt']['nProt'])){
+                    $this->useBancoMysql->sqlInsertCli($this->tratamentoUpload($file));
+                    return true;
+                }else{
+                    echo 'Value nProt n√£o existente.';
+                }
+            } else {
+                echo 'nProt n√£o existente.';
+            }
+        }else{
+            echo 'Cnpj n√£o existente.';
         }
-        else {
-echo "n„o";
-        }
-
-
-        echo "<pre>-------------------------------------";
-        print_r($teste);
-        exit();
-
-        // Inst‚ncia o objeto SimpleXMLElement passando como par‚metro o XML
-        $xml = new SimpleXMLElement($path);
-        
-        // Retorna os Namespaces existentes no XML
-        $ns = $xml->getNamespaces(true);
-        
-        print_r($ns);
-        exit();
-
-
-        // Retorna todos os elementos filhos com Namespace 'p'
-        $child = $xml->children($ns['p']);
-        
-        // Percorre os elementos filhos
-        foreach ($child->cliente as $elemento):
-            echo $elemento . '<br>';
-        endforeach;
-                
-        //$file = fopen($path, "r");
-
-        // //Output lines until EOF is reached
-        // while(! feof($file)) {
-        // $line = fgets($file);
-        // echo "<br>*---- ".$line. "---<br>";
-        // }
-
-        // $contents=file_get_contents($path);
-        // $lines=explode("\n",$contents);
-        // foreach($lines as $line){
-        
-        // $xml = simplexml_load_file($line) -> channel;
-
-        // echo $xml.'<br>';
-        // }
-
-        
     }
 
-    public function uploadErroTipo($erro)
-    {
-       
-        switch ($erro) {
-            case 1:
-                $message = "O arquivo enviado excede o limite definido na diretiva upload_max_filesize do php.ini";
-                break;
-            case 2:
-                $message = "O arquivo excede o limite definido em MAX_FILE_SIZE no formul·rio HTML";
-                break;
-            case 3:
-                $message = "O upload do arquivo foi feito parcialmente";
-                break;
-            case 4:
-                $message = "Nenhum arquivo foi enviado";
-                break;
-            case 6:
-                $message = "Pasta tempor·ria ausente";
-                break;
-            case 7:
-                $message = " Falha ao escrever o arquivo no disco";
-                break;
-            case 8:
-                $message = "Uma extens„o do PHP interrompeu o upload do arquivo. O PHP n„o fornece uma maneira de determinar qual extens„o causou a interrupÁ„o do upload. Examinar a lista das extensıes carregadas com o phpinfo() pode ajudar.";
-                break;
+    public function tratamentoUpload($jsonDados)
+    {   
+        $dados = [
+            'nnf'=>  $jsonDados['NFe']['infNFe']['ide']['nNF'],
+            'dh_emi'=>  $jsonDados['NFe']['infNFe']['ide']['dhEmi'],
+            'cnpj'=>  $jsonDados['NFe']['infNFe']['dest']['CNPJ'],
+            'x_nome'=>  $jsonDados['NFe']['infNFe']['dest']['CNPJ'],
+            'ender_dest'=>  $jsonDados['NFe']['infNFe']['dest']['enderDest']['xFant'],
+            'xlgr'=>  $jsonDados['NFe']['infNFe']['dest']['enderDest']['xLgr'],
+            'nro'=>  $jsonDados['NFe']['infNFe']['dest']['enderDest']['nro'],
+            'xbairro'=>  $jsonDados['NFe']['infNFe']['dest']['enderDest']['xBairro'],
+            'cmun'=>  $jsonDados['NFe']['infNFe']['dest']['enderDest']['cMun'],
+            'uf'=>  $jsonDados['NFe']['infNFe']['dest']['enderDest']['xMun'],
+            'cep'=>  $jsonDados['NFe']['infNFe']['dest']['enderDest']['UF'],
+            'cpais'=>  $jsonDados['NFe']['infNFe']['dest']['enderDest']['CEP'],
+            'fone'=>  $jsonDados['NFe']['infNFe']['dest']['enderDest']['cPais'],
+            'vnf'=>  $jsonDados['NFe']['infNFe']['total']['ICMSTot']['vNF']
+        ];
 
-            default:
-                $message = "o upload foi bem sucedido";
-                break;
-        }
-        return $message;
+        return $dados;
     }
+
+    
 
 
 

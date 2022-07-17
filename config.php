@@ -7,5 +7,7 @@
     const DBPASS = '';
 
     const CPFCLIENTE = '09066241000884';
+    const TIPOEXTENCAO  =  ['xml']; 
+    const TABELABANCO = 'teste';
 
     
